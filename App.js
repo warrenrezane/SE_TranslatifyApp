@@ -1,15 +1,15 @@
 import React, { Component } from 'react';
-import { StatusBar, Text, View, TouchableOpacity, Dimensions, StyleSheet, Image, Alert, ActivityIndicator } from 'react-native';
+import { StatusBar, Text, View, TouchableOpacity, Dimensions, StyleSheet, Image, Alert, ActivityIndicator, TextInput, Picker } from 'react-native';
 
 import { RNCamera } from 'react-native-camera';
 import Spinner from 'react-native-loading-spinner-overlay';
 import Modal from 'react-native-simple-modal';
 import RNExitApp from 'react-native-exit-app';
 import axios from 'axios';
-import { key } from './key';
 
-const API_KEY = key;
+const API_KEY = '';
 const visionApi = 'https://vision.googleapis.com/v1/images:annotate?key=' + API_KEY;
+const translateApi = 'https://www.googleapis.com/language/translate/v2?key=' + API_KEY;
 const { width } = Dimensions.get('window');
 
 export default class App extends Component {
@@ -19,9 +19,9 @@ export default class App extends Component {
       loading: false,
       showSpinner: false,
       showModal: false,
-      image64: null,
       description: null,
-      locale: null
+      locale: null,
+      translatedDesc: null
     };
     this.toggleLoader = this.toggleLoader.bind(this);
   }
@@ -71,13 +71,37 @@ export default class App extends Component {
         })
         .catch(error => console.log(error, 'error'));
       this.setState({
-        image64: data.base64
-      })
-      this.setState({
         showSpinner: false,
         loading: false,
         showModal: true
       })
+    }
+  }
+
+  pickerChange(lang) {
+    if (lang !== 0) {
+      this.setState({
+        language: lang
+      })
+      this.toggleLoader();
+      const self = this;
+      axios.get(translateApi, {
+        params: {
+          q: self.state.description,
+          source: self.state.locale,
+          target: lang
+        }
+      })
+        .then(function (response) {
+          const translatedText = response.data.data.translations[0].translatedText;
+          self.setState({
+            translatedDesc: translatedText,
+            showSpinner: false,
+          });
+        })
+        .catch(function (error) {
+          console.log(error);
+        });
     }
   }
 
@@ -118,18 +142,42 @@ export default class App extends Component {
           closeOnTouchOutside={false}
           disableOnBackPress={true} >
           <View>
-            <View style={styles.modalContainer}>
-              <Image source={{ uri: `data:image/jpeg;base64,${this.state.image64}` }} style={{ width: 100, height: 100 }} />
-            </View>
             {
               !this.state.description ? <ActivityIndicator style={{ padding: 15 }} size="small" color="#75aaff" /> :
-                <View style={{ alignContent: 'center' }}>
-                  <Text style={{ fontSize: 15, margin: 10, textAlign: 'center' }}>Detected Language: {`${this.findLanguage(this.state.locale, languageSelection)} | ${this.state.locale}`}</Text>
-                  <Text style={{ fontSize: 15, margin: 5, textAlign: 'center' }}>{this.state.description}</Text>
+                <View>
+                  <Text style={{ textAlign: 'center', marginBottom: 10, fontSize: 15, letterSpacing: 1, color: 'black' }}>RESULTS</Text>
+                  <View style={{ flexDirection: 'row' }}>
+                    <Text style={{ margin: 15, fontSize: 15, letterSpacing: 1 }}>LANGUAGE DETECTED:</Text>
+                    <Text style={{ fontWeight: 'bold', margin: 15, fontSize: 15, color: 'black', letterSpacing: 1 }}>{`${this.findLanguage(this.state.locale, languageSelection)}`}</Text>
+                  </View>
+
+                  <View style={{ margin: 5, backgroundColor: '#E8E8E8', borderRadius: 10, marginBottom: 20 }}>
+                    <TextInput style={{ textAlign: 'center', color: 'black' }} value={this.state.description} editable={false} multiline={true} />
+                  </View>
+
+                  <View style={{ flexDirection: 'row' }}>
+                    <Text style={{ margin: 15, fontSize: 15, letterSpacing: 1 }}>TRANSLATE TO:</Text>
+                    <Picker
+                      style={{ width: 170, transform: [{ scaleX: 1 }, { scaleY: 1 },], height: -4 }}
+                      selectedValue={this.state.language}
+                      onValueChange={this.pickerChange.bind(this)}>
+                      <Picker.Item key={0} label={"Please select..."} value={0} />
+                      {
+                        languageSelection.map((language) => {
+                          return <Picker.Item key={language.key} label={language.label} value={language.value} />
+                        })
+                      }
+                    </Picker>
+                  </View>
+
+                  <View style={{ margin: 5, backgroundColor: '#E8E8E8', borderRadius: 10, marginBottom: 10 }}>
+                    <TextInput style={{ textAlign: 'center', color: 'black' }} value={!this.state.translatedDesc ? 'Translating...' : this.state.translatedDesc} placeholder={"Choose a target language to start translating."} editable={false} multiline={true} />
+                  </View>
+
                   <TouchableOpacity
                     style={styles.closeButton}
                     onPress={this.cleanUpCamera.bind(this)}>
-                    <Text style={{ textAlign: 'center' }}>Close</Text>
+                    <Text style={{ textAlign: 'center', letterSpacing: 1 }}>Close</Text>
                   </TouchableOpacity>
                 </View>
             }
@@ -141,10 +189,12 @@ export default class App extends Component {
 
   cleanUpCamera() {
     this.setState({
+      loading: false,
+      showSpinner: false,
       showModal: false,
-      image64: null,
       description: null,
-      locale: null
+      locale: null,
+      translatedDesc: null
     })
   }
 
@@ -163,10 +213,10 @@ export default class App extends Component {
     )
   }
 
-  findLanguage(key, langArr) {
+  findLanguage(value, langArr) {
     for (let i = 0; i < langArr.length; i++) {
-      if (langArr[i].key === key) {
-        return langArr[i].language;
+      if (langArr[i].value === value) {
+        return langArr[i].label;
       }
     }
     return 'language not yet supported. ';
@@ -221,7 +271,7 @@ const styles = StyleSheet.create({
     borderRadius: 45,
   },
   closeButton: {
-    margin: 5,
+    margin: 15,
     backgroundColor: '#e1e9ef',
     padding: 10,
     width: 70,
@@ -234,15 +284,28 @@ const styles = StyleSheet.create({
 
 const languageSelection = [
   {
-    key: 'en',
-    language: 'English'
+    key: 1,
+    label: 'Chinese',
+    value: 'zh-CN'
   },
   {
-    key: 'ja',
-    language: 'Japanese'
+    key: 2,
+    label: 'Korean',
+    value: 'ko'
   },
   {
-    key: 'ko',
-    language: 'Korean'
+    key: 3,
+    label: 'Japanese',
+    value: 'ja'
+  },
+  {
+    key: 4,
+    label: 'English',
+    value: 'en'
+  },
+  {
+    key: 5,
+    label: 'German',
+    value: 'de'
   }
 ]

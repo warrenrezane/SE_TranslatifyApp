@@ -8,4 +8,4 @@ Scope and Limitation: The goal of this app is to provide translation at no cost.
 
 ### Updates
 
-11-01-2018 - Added apk file in apk_builds folder for initial testing.
+<strong>11-01-2018</strong> - Added apk file in apk_builds folder for initial testing.
