@@ -109,31 +109,26 @@ export default class App extends Component {
     const languageSelection = [
       {
         key: 1,
-        label: 'Chinese (Simplified)',
-        value: 'zh-CN'
+        label: 'Chinese',
+        value: 'zh'
       },
       {
         key: 2,
-        label: 'Chinese (Traditional)',
-        value: 'zh-TW'
-      },
-      {
-        key: 3,
         label: 'Korean',
         value: 'ko'
       },
       {
-        key: 4,
+        key: 3,
         label: 'Japanese',
         value: 'ja'
       },
       {
-        key: 5,
+        key: 4,
         label: 'English',
         value: 'en'
       },
       {
-        key: 6,
+        key: 5,
         label: 'German',
         value: 'de'
       }
