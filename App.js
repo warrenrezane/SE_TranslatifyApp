@@ -7,7 +7,7 @@ import Modal from 'react-native-simple-modal';
 import RNExitApp from 'react-native-exit-app';
 import axios from 'axios';
 
-const API_KEY = '';
+const API_KEY = 'AIzaSyCs24BhtrmXWeyFq7WoWRn08KseuTDakVY';
 const visionApi = 'https://vision.googleapis.com/v1/images:annotate?key=' + API_KEY;
 const translateApi = 'https://www.googleapis.com/language/translate/v2?key=' + API_KEY;
 const { width } = Dimensions.get('window');
@@ -54,7 +54,7 @@ export default class App extends Component {
               maxResults: 1
             }],
             imageContext: {
-              languageHints: ["en-t-i0-handwrit", "zh-CN", "zh-TW", "ja"]
+              languageHints: ["zh-CN", "zh-TW", "ja", "ko", "de", "en"]
             }
           }
         ]
@@ -65,7 +65,7 @@ export default class App extends Component {
           const textContent = textAnnotations.description;
           const detectedLanguage = textAnnotations.locale;
           this.setState({
-            description: textContent,
+            description: textContent.replace(/\n|\r/g, " "),
             locale: detectedLanguage
           })
         })
@@ -106,6 +106,47 @@ export default class App extends Component {
   }
 
   render() {
+    const languageSelection = [
+      {
+        key: 1,
+        label: 'Chinese (Simplified)',
+        value: 'zh-CN'
+      },
+      {
+        key: 2,
+        label: 'Chinese (Traditional)',
+        value: 'zh-TW'
+      },
+      {
+        key: 3,
+        label: 'Korean',
+        value: 'ko'
+      },
+      {
+        key: 4,
+        label: 'Japanese',
+        value: 'ja'
+      },
+      {
+        key: 5,
+        label: 'English',
+        value: 'en'
+      },
+      {
+        key: 6,
+        label: 'German',
+        value: 'de'
+      }
+    ]
+
+    const filteredLanguages = languageSelection.filter(language => {
+      if (language.value === this.state.locale) {
+        return false;
+      }
+      return true;
+    })
+
+
     return (
       <View style={styles.container}>
         <View style={styles.title}>
@@ -130,10 +171,8 @@ export default class App extends Component {
           </View>
         </View>
 
-        {/* SPINNER WHILE CAPTURING IMAGE */}
         <Spinner visible={this.state.showSpinner} />
 
-        {/* MODAL VIEW WHEN DATA BASE64 IS SET */}
         <Modal
           offset={0}
           open={this.state.showModal}
@@ -145,33 +184,33 @@ export default class App extends Component {
             {
               !this.state.description ? <ActivityIndicator style={{ padding: 15 }} size="small" color="#75aaff" /> :
                 <View>
-                  <Text style={{ textAlign: 'center', marginBottom: 10, fontSize: 15, letterSpacing: 1, color: 'black' }}>RESULTS</Text>
+                  <Text style={styles.results}>RESULTS</Text>
                   <View style={{ flexDirection: 'row' }}>
-                    <Text style={{ margin: 15, fontSize: 15, letterSpacing: 1 }}>LANGUAGE DETECTED:</Text>
-                    <Text style={{ fontWeight: 'bold', margin: 15, fontSize: 15, color: 'black', letterSpacing: 1 }}>{`${this.findLanguage(this.state.locale, languageSelection)}`}</Text>
+                    <Text style={styles.label}>LANGUAGE DETECTED:</Text>
+                    <Text style={styles.langDetect}>{`${this.findLanguage(this.state.locale, languageSelection)}`}</Text>
                   </View>
 
-                  <View style={{ margin: 5, backgroundColor: '#E8E8E8', borderRadius: 10, marginBottom: 20 }}>
-                    <TextInput style={{ textAlign: 'center', color: 'black' }} value={this.state.description} editable={false} multiline={true} />
+                  <View style={styles.textView}>
+                    <TextInput style={styles.textInp} value={this.state.description} editable={false} multiline={true} />
                   </View>
 
                   <View style={{ flexDirection: 'row' }}>
-                    <Text style={{ margin: 15, fontSize: 15, letterSpacing: 1 }}>TRANSLATE TO:</Text>
+                    <Text style={styles.label}>TRANSLATE TO:</Text>
                     <Picker
-                      style={{ width: 170, transform: [{ scaleX: 1 }, { scaleY: 1 },], height: -4 }}
+                      style={styles.picker}
                       selectedValue={this.state.language}
                       onValueChange={this.pickerChange.bind(this)}>
                       <Picker.Item key={0} label={"Please select..."} value={0} />
                       {
-                        languageSelection.map((language) => {
+                        filteredLanguages.map((language) => {
                           return <Picker.Item key={language.key} label={language.label} value={language.value} />
                         })
                       }
                     </Picker>
                   </View>
 
-                  <View style={{ margin: 5, backgroundColor: '#E8E8E8', borderRadius: 10, marginBottom: 10 }}>
-                    <TextInput style={{ textAlign: 'center', color: 'black' }} value={!this.state.translatedDesc ? 'Translating...' : this.state.translatedDesc} placeholder={"Choose a target language to start translating."} editable={false} multiline={true} />
+                  <View style={styles.textView}>
+                    <TextInput style={styles.textInp} value={!this.state.translatedDesc ? 'Choose a target language to start translating.' : this.state.translatedDesc} editable={false} multiline={true} />
                   </View>
 
                   <TouchableOpacity
@@ -219,7 +258,7 @@ export default class App extends Component {
         return langArr[i].label;
       }
     }
-    return 'language not yet supported. ';
+    return 0;
   }
 }
 
@@ -277,35 +316,42 @@ const styles = StyleSheet.create({
     width: 70,
     borderRadius: 20,
     alignSelf: 'center'
+  },
+  results: {
+    textAlign: 'center',
+    margin: 15,
+    fontSize: 15,
+    letterSpacing: 1,
+    color: 'black'
+  },
+  label: {
+    margin: 15,
+    fontSize: 15,
+    letterSpacing: 1
+  },
+  langDetect: {
+    fontWeight: 'bold',
+    margin: 15,
+    fontSize: 15,
+    color: 'black',
+    letterSpacing: 1
+  },
+  textView: {
+    margin: 5,
+    backgroundColor:
+      '#E8E8E8',
+    borderRadius: 10,
+    marginBottom: 20
+  },
+  textInp: {
+    textAlign: 'center',
+    color: 'black'
+  },
+  picker: {
+    width: 170,
+    transform: [{ scaleX: 1 },
+    { scaleY: 1 },
+    ],
+    height: -4
   }
 });
-
-// Language Selection here
-
-const languageSelection = [
-  {
-    key: 1,
-    label: 'Chinese',
-    value: 'zh-CN'
-  },
-  {
-    key: 2,
-    label: 'Korean',
-    value: 'ko'
-  },
-  {
-    key: 3,
-    label: 'Japanese',
-    value: 'ja'
-  },
-  {
-    key: 4,
-    label: 'English',
-    value: 'en'
-  },
-  {
-    key: 5,
-    label: 'German',
-    value: 'de'
-  }
-]
