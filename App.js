@@ -183,12 +183,12 @@ export default class App extends Component {
           <View>
             {
               !this.state.description ? <ActivityIndicator style={{ padding: 15 }} size="small" color="#75aaff" /> :
-                this.findLanguage(this.state.locale, languageSelection) == '/NA' ?
+                this.findLanguage(this.state.locale, languageSelection) == 0 ?
                   <View>
                     <Text style={styles.results}>RESULTS</Text>
                     <View style={{ flexDirection: 'row' }}>
                       <Text style={styles.label}>LANGUAGE DETECTED:</Text>
-                      <Text style={styles.langDetect}>{`${this.findLanguage(this.state.locale, languageSelection)}`}</Text>
+                      <Text style={styles.langDetect}>Unsupported</Text>
                     </View>
 
                     <TouchableOpacity
