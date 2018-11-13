@@ -183,42 +183,59 @@ export default class App extends Component {
           <View>
             {
               !this.state.description ? <ActivityIndicator style={{ padding: 15 }} size="small" color="#75aaff" /> :
-                <View>
-                  <Text style={styles.results}>RESULTS</Text>
-                  <View style={{ flexDirection: 'row' }}>
-                    <Text style={styles.label}>LANGUAGE DETECTED:</Text>
-                    <Text style={styles.langDetect}>{`${this.findLanguage(this.state.locale, languageSelection)}`}</Text>
+                this.findLanguage(this.state.locale, languageSelection) == '/NA' ?
+                  <View>
+                    <Text style={styles.results}>RESULTS</Text>
+                    <View style={{ flexDirection: 'row' }}>
+                      <Text style={styles.label}>LANGUAGE DETECTED:</Text>
+                      <Text style={styles.langDetect}>{`${this.findLanguage(this.state.locale, languageSelection)}`}</Text>
+                    </View>
+
+                    <TouchableOpacity
+                      style={styles.closeButton}
+                      onPress={this.cleanUpCamera.bind(this)}>
+                      <Text style={{ textAlign: 'center', letterSpacing: 1 }}>Close</Text>
+                    </TouchableOpacity>
                   </View>
 
-                  <View style={styles.textView}>
-                    <TextInput style={styles.textInp} value={this.state.description} editable={false} multiline={true} />
-                  </View>
+                  :
 
-                  <View style={{ flexDirection: 'row' }}>
-                    <Text style={styles.label}>TRANSLATE TO:</Text>
-                    <Picker
-                      style={styles.picker}
-                      selectedValue={this.state.language}
-                      onValueChange={this.pickerChange.bind(this)}>
-                      <Picker.Item key={0} label={"Please select..."} value={0} />
-                      {
-                        filteredLanguages.map((language) => {
-                          return <Picker.Item key={language.key} label={language.label} value={language.value} />
-                        })
-                      }
-                    </Picker>
-                  </View>
+                  <View>
+                    <Text style={styles.results}>RESULTS</Text>
+                    <View style={{ flexDirection: 'row' }}>
+                      <Text style={styles.label}>LANGUAGE DETECTED:</Text>
+                      <Text style={styles.langDetect}>{`${this.findLanguage(this.state.locale, languageSelection)}`}</Text>
+                    </View>
 
-                  <View style={styles.textView}>
-                    <TextInput style={styles.textInp} value={!this.state.translatedDesc ? 'Choose a target language to start translating.' : this.state.translatedDesc} editable={false} multiline={true} />
-                  </View>
+                    <View style={styles.textView}>
+                      <TextInput style={styles.textInp} value={this.state.description} editable={false} multiline={true} />
+                    </View>
 
-                  <TouchableOpacity
-                    style={styles.closeButton}
-                    onPress={this.cleanUpCamera.bind(this)}>
-                    <Text style={{ textAlign: 'center', letterSpacing: 1 }}>Close</Text>
-                  </TouchableOpacity>
-                </View>
+                    <View style={{ flexDirection: 'row' }}>
+                      <Text style={styles.label}>TRANSLATE TO:</Text>
+                      <Picker
+                        style={styles.picker}
+                        selectedValue={this.state.language}
+                        onValueChange={this.pickerChange.bind(this)}>
+                        <Picker.Item key={0} label={"Please select..."} value={0} />
+                        {
+                          filteredLanguages.map((language) => {
+                            return <Picker.Item key={language.key} label={language.label} value={language.value} />
+                          })
+                        }
+                      </Picker>
+                    </View>
+
+                    <View style={styles.textView}>
+                      <TextInput style={styles.textInp} value={!this.state.translatedDesc ? 'Choose a target language to start translating.' : this.state.translatedDesc} editable={false} multiline={true} />
+                    </View>
+
+                    <TouchableOpacity
+                      style={styles.closeButton}
+                      onPress={this.cleanUpCamera.bind(this)}>
+                      <Text style={{ textAlign: 'center', letterSpacing: 1 }}>Close</Text>
+                    </TouchableOpacity>
+                  </View>
             }
           </View>
         </Modal>
@@ -233,7 +250,8 @@ export default class App extends Component {
       showModal: false,
       description: null,
       locale: null,
-      translatedDesc: null
+      translatedDesc: null,
+      language: null
     })
   }
 
