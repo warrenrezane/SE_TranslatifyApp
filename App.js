@@ -7,7 +7,7 @@ import Modal from 'react-native-simple-modal';
 import RNExitApp from 'react-native-exit-app';
 import axios from 'axios';
 
-const API_KEY = 'AIzaSyCs24BhtrmXWeyFq7WoWRn08KseuTDakVY';
+const API_KEY = '';
 const visionApi = 'https://vision.googleapis.com/v1/images:annotate?key=' + API_KEY;
 const translateApi = 'https://www.googleapis.com/language/translate/v2?key=' + API_KEY;
 const { width } = Dimensions.get('window');
