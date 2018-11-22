@@ -1,5 +1,5 @@
 import React, { Component } from 'react';
-import { StatusBar, Text, View, TouchableOpacity, Dimensions, StyleSheet, Image, Alert, ActivityIndicator, TextInput, Picker } from 'react-native';
+import { NetInfo, StatusBar, Text, View, TouchableOpacity, Dimensions, StyleSheet, Image, Alert, ActivityIndicator, TextInput, Picker } from 'react-native';
 
 import { RNCamera } from 'react-native-camera';
 import Spinner from 'react-native-loading-spinner-overlay';
@@ -7,7 +7,7 @@ import Modal from 'react-native-simple-modal';
 import RNExitApp from 'react-native-exit-app';
 import axios from 'axios';
 
-const API_KEY = '';
+const API_KEY = 'AIzaSyCs24BhtrmXWeyFq7WoWRn08KseuTDakVY';
 const visionApi = 'https://vision.googleapis.com/v1/images:annotate?key=' + API_KEY;
 const translateApi = 'https://www.googleapis.com/language/translate/v2?key=' + API_KEY;
 const { width } = Dimensions.get('window');
@@ -25,6 +25,15 @@ export default class App extends Component {
       timeoutTimer: 15000
     };
     this.toggleLoader = this.toggleLoader.bind(this);
+  }
+
+  componentWillMount() {
+    NetInfo.getConnectionInfo().then((connectionInfo) => {
+      console.log(connectionInfo.type);
+      if (connectionInfo.type === "none") {
+        this.handleNetworkError();
+      }
+    })
   }
 
   componentDidMount() {
@@ -58,6 +67,7 @@ export default class App extends Component {
         const response = await axios.post(visionApi, obj, {
           timeout: this.state.timeoutTimer
         });
+        console.log(response);
         const textAnnotations = response.data.responses[0].textAnnotations[0];
         const textContent = textAnnotations.description;
         const detectedLanguage = textAnnotations.locale;
@@ -67,6 +77,9 @@ export default class App extends Component {
         })
       } catch (err) {
         console.log(err.message);
+        this.setState({
+          showModal: false
+        })
         if (err.message === "Network Error") {
           this.handleNetworkError();
         }
@@ -80,18 +93,13 @@ export default class App extends Component {
     }
   }
 
-  handleError(error) {
+  handleError() {
     Alert.alert(
       'Text Recognition Error',
-      'It looks like there are no texts in the captured image. Error: ' + error,
+      'It looks like there are no texts in the captured image.',
       [
         {
-          text: 'Capture again',
-          onPress: () => {
-            this.setState({
-              showModal: false
-            })
-          }
+          text: 'Capture again'
         }
       ],
       { cancelable: false }
@@ -101,15 +109,10 @@ export default class App extends Component {
   handleTimeout(timeout) {
     Alert.alert(
       'Request Timeout',
-      `Timout of ${timeout} milliseconds exceeded.`,
+      `Timout of ${timeout} milliseconds exceeded. \nPlease check your internet connection.`,
       [
         {
-          text: 'Go back',
-          onPress: () => {
-            this.setState({
-              showModal: false
-            })
-          }
+          text: 'Go back'
         }
       ],
       { cancelable: false }
@@ -122,11 +125,9 @@ export default class App extends Component {
       'Please check your internet connection.',
       [
         {
-          text: 'Go back',
+          text: 'Exit',
           onPress: () => {
-            this.setState({
-              showModal: false
-            })
+            RNExitApp.exitApp();
           }
         }
       ],
@@ -182,7 +183,7 @@ export default class App extends Component {
             maxResults: 1
           }],
           imageContext: {
-            languageHints: ["zh", "en", "de", "ko", "ja"]
+            languageHints: ["en-t-i0-handwrit", "zh", "en", "de", "ko", "ja"]
           }
         }
       ]
