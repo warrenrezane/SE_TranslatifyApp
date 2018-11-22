@@ -21,7 +21,8 @@ export default class App extends Component {
       showModal: false,
       description: null,
       locale: null,
-      translatedDesc: null
+      translatedDesc: null,
+      timeoutTimer: 15000
     };
     this.toggleLoader = this.toggleLoader.bind(this);
   }
@@ -54,7 +55,9 @@ export default class App extends Component {
 
       // Vision API processing
       try {
-        const response = await axios.post(visionApi, obj);
+        const response = await axios.post(visionApi, obj, {
+          timeout: this.state.timeoutTimer
+        });
         const textAnnotations = response.data.responses[0].textAnnotations[0];
         const textContent = textAnnotations.description;
         const detectedLanguage = textAnnotations.locale;
@@ -64,23 +67,44 @@ export default class App extends Component {
         })
       } catch (err) {
         console.log(err.message);
-        if (err.message == "Cannot read property '0' of undefined") {
-          this.handleError();
-        }
         if (err.message === "Network Error") {
           this.handleNetworkError();
+        }
+        else if (err.message === `timeout of ${this.state.timeoutTimer}ms exceeded`) {
+          this.handleTimeout(this.state.timeoutTimer);
+        }
+        else {
+          this.handleError(err.message);
         }
       }
     }
   }
 
-  handleError() {
+  handleError(error) {
     Alert.alert(
       'Text Recognition Error',
-      'It looks like there are no texts in the captured image.',
+      'It looks like there are no texts in the captured image. Error: ' + error,
       [
         {
           text: 'Capture again',
+          onPress: () => {
+            this.setState({
+              showModal: false
+            })
+          }
+        }
+      ],
+      { cancelable: false }
+    )
+  }
+
+  handleTimeout(timeout) {
+    Alert.alert(
+      'Request Timeout',
+      `Timout of ${timeout} milliseconds exceeded.`,
+      [
+        {
+          text: 'Go back',
           onPress: () => {
             this.setState({
               showModal: false
