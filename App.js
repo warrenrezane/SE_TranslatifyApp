@@ -7,7 +7,7 @@ import Modal from 'react-native-simple-modal';
 import RNExitApp from 'react-native-exit-app';
 import axios from 'axios';
 
-const API_KEY = 'AIzaSyCs24BhtrmXWeyFq7WoWRn08KseuTDakVY';
+const API_KEY = '';
 const visionApi = 'https://vision.googleapis.com/v1/images:annotate?key=' + API_KEY;
 const translateApi = 'https://www.googleapis.com/language/translate/v2?key=' + API_KEY;
 const { width } = Dimensions.get('window');
@@ -42,39 +42,126 @@ export default class App extends Component {
       this.setState({ loading: true });
       const options = { base64: true, fixOrientation: true, width: 720, cropToPreview: true };
       const data = await this.camera.takePictureAsync(options);
+      const obj = this.visionJSON(data);
       console.log(data.base64.replace(/\n|\r/g, ""));
-      axios.post(visionApi, {
-        requests: [
-          {
-            image: {
-              content: data.base64.replace(/\n|\r/g, "")
-            },
-            features: [{
-              type: 'TEXT_DETECTION',
-              maxResults: 1
-            }],
-            imageContext: {
-              languageHints: ["zh-CN", "zh-TW", "ja", "ko", "de", "en"]
-            }
-          }
-        ]
-      })
-        .then((response) => {
-          console.log(response);
-          const textAnnotations = response.data.responses[0].textAnnotations[0];
-          const textContent = textAnnotations.description;
-          const detectedLanguage = textAnnotations.locale;
-          this.setState({
-            description: textContent.replace(/\n|\r/g, " "),
-            locale: detectedLanguage
-          })
-        })
-        .catch(error => console.log(error, 'error'));
+
+      // Close the spinner after taking the image
       this.setState({
         showSpinner: false,
         loading: false,
         showModal: true
       })
+
+      // Vision API processing
+      try {
+        const response = await axios.post(visionApi, obj);
+        const textAnnotations = response.data.responses[0].textAnnotations[0];
+        const textContent = textAnnotations.description;
+        const detectedLanguage = textAnnotations.locale;
+        this.setState({
+          description: textContent.replace(/\n|\r/g, " "),
+          locale: detectedLanguage,
+        })
+      } catch (err) {
+        console.log(err.message);
+        if (err.message == "Cannot read property '0' of undefined") {
+          this.handleError();
+        }
+        if (err.message === "Network Error") {
+          this.handleNetworkError();
+        }
+      }
+    }
+  }
+
+  handleError() {
+    Alert.alert(
+      'Text Recognition Error',
+      'It looks like there are no texts in the captured image.',
+      [
+        {
+          text: 'Capture again',
+          onPress: () => {
+            this.setState({
+              showModal: false
+            })
+          }
+        }
+      ],
+      { cancelable: false }
+    )
+  }
+
+  handleNetworkError() {
+    Alert.alert(
+      'Network Error',
+      'Please check your internet connection.',
+      [
+        {
+          text: 'Go back',
+          onPress: () => {
+            this.setState({
+              showModal: false
+            })
+          }
+        }
+      ],
+      { cancelable: false }
+    )
+  }
+
+  cleanUpCamera() {
+    this.setState({
+      loading: false,
+      showSpinner: false,
+      showModal: false,
+      description: null,
+      locale: null,
+      translatedDesc: null,
+      language: null
+    })
+  }
+
+  handleExit() {
+    Alert.alert(
+      'Information',
+      'Are you sure want to exit?', [{
+        text: 'Cancel',
+        style: 'cancel'
+      }, {
+        text: 'Yes',
+        onPress: () => RNExitApp.exitApp()
+      },], {
+        cancelable: false
+      }
+    )
+  }
+
+  findLanguage(value, langArr) {
+    for (let i = 0; i < langArr.length; i++) {
+      if (langArr[i].value === value) {
+        return langArr[i].label;
+      }
+    }
+    return 0;
+  }
+
+  visionJSON(data) {
+    return visionJSON = {
+      requests: [
+        {
+          image: {
+            content: data.base64.replace(/\n|\r/g, "")
+          },
+          features: [{
+            type: 'TEXT_DETECTION',
+            maxResults: 1
+          }],
+          imageContext: {
+            languageHints: ["zh", "en", "de", "ko", "ja"]
+          }
+        }
+      ]
     }
   }
 
@@ -236,42 +323,6 @@ export default class App extends Component {
         </Modal>
       </View>
     );
-  }
-
-  cleanUpCamera() {
-    this.setState({
-      loading: false,
-      showSpinner: false,
-      showModal: false,
-      description: null,
-      locale: null,
-      translatedDesc: null,
-      language: null
-    })
-  }
-
-  handleExit() {
-    Alert.alert(
-      'Information',
-      'Are you sure want to exit?', [{
-        text: 'Cancel',
-        style: 'cancel'
-      }, {
-        text: 'Yes',
-        onPress: () => RNExitApp.exitApp()
-      },], {
-        cancelable: false
-      }
-    )
-  }
-
-  findLanguage(value, langArr) {
-    for (let i = 0; i < langArr.length; i++) {
-      if (langArr[i].value === value) {
-        return langArr[i].label;
-      }
-    }
-    return 0;
   }
 }
 
